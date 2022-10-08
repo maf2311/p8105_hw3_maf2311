@@ -1,0 +1,59 @@
+---
+title: "p8105_hw3_maf2311"
+author: "Mackenzie Frost"
+date: "Octobr 8 2022"
+output: github_document
+---
+
+```{r setup, include = FALSE}
+library(tidyverse)
+library(readxl)
+library(dplyr)
+library(plyr)
+```
+
+# Problem 1
+
+```{r q1, include = FALSE}
+library(p8105.datasets)
+data("instacart")
+common_aisle = count(instacart$aisle) 
+max = max(common_aisle$freq)
+final = filter(common_aisle$freq == max)
+```
+
+Instacarts Dataset Description: 
+
+The Instacart Dataset has the following variables: `r names(instacart)`. It has `r nrow(instacart)` rows and `r ncol(instacart)` columns. ILLSTRATIVE EX?
+
+* There are `r max(instacart$aisle_id)` unique aisles, and the most items are ordered from aisle `r common_aisle$x[54]`.
+* Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+* Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+* Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
+# Problem 2
+```{r q2, include = FALSE}
+accel = read_csv(file = "./local_data_q1_q2/accel_data.csv") %>% 
+  janitor::clean_names() %>%
+    pivot_longer(
+    activity_1:activity_1440,
+    names_to = "activity_minute", 
+    values_to = "activity") %>%
+  mutate(SatSun = ifelse(day == "Saturday" | day == "Sunday", 1, 0))
+```
+
+The accel dataset contains five weeks of accelerometer data collected on a 63 year-old male with BMI 25, who was admitted to the Advanced Cardiac Care Center of Columbia University Medical Center and diagnosed with congestive heart failure (CHF). It has `r nrow(accel)` rows and `r ncol(accel)` columns, and the variables included: `r names(accel)`
+
+```{r q2.1, include = FALSE}
+accel = accel %>%
+  group_by(day_id) %>%
+  mutate(total_day_activity = summarise(activity))
+```
+
+Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate across minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
+
+# Problem 3
+
+
+
+
