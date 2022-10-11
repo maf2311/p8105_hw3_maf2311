@@ -14,7 +14,7 @@ library(plyr)
 
 # Problem 1
 
-```{r q1, include = FALSE}
+```{r q1}
 library(p8105.datasets)
 data("instacart")
 common_aisle = count(instacart$aisle) 
@@ -32,7 +32,7 @@ The Instacart Dataset has the following variables: `r names(instacart)`. It has 
 * Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
 
 # Problem 2
-```{r q2, include = FALSE}
+```{r q2}
 accel = read_csv(file = "./local_data_q1_q2/accel_data.csv") %>% 
   janitor::clean_names() %>%
     pivot_longer(
@@ -44,16 +44,22 @@ accel = read_csv(file = "./local_data_q1_q2/accel_data.csv") %>%
 
 The accel dataset contains five weeks of accelerometer data collected on a 63 year-old male with BMI 25, who was admitted to the Advanced Cardiac Care Center of Columbia University Medical Center and diagnosed with congestive heart failure (CHF). It has `r nrow(accel)` rows and `r ncol(accel)` columns, and the variables included: `r names(accel)`
 
-```{r q2.1, include = FALSE}
-accel = accel %>%
-  group_by(day_id) %>%
-  mutate(total_day_activity = summarise(activity))
+```{r q2.1}
+
+accel %>% group_by(day_id) %>%
+    summarize(total_day_activity = sum(activity))
+
 ```
 
 Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate across minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
 
 # Problem 3
+```{r q3}
+library(p8105.datasets)
+data("ny_noaa")
+```
+The NOAA dataset contains data from NOAA National Climatic Data Center. For each Weather station ID, the dataset describes the Date of observation, Precipitation (tenths of mm), Snowfall (mm), Snow depth (mm), Maximum temperature (tenths of degrees C), and the Minimum temperature (tenths of degrees C). It has `r nrow(my_noaa)` rows and `r ncol(my_noaa)` columns.
 
-
+indicating the extent to which missing data is an issue. 
 
 
