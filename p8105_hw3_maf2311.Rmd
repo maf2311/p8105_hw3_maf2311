@@ -8,6 +8,8 @@ output: github_document
 ```{r setup, include = FALSE}
 library(tidyverse)
 library(readxl)
+library(ggridges)
+library(patchwork)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -59,7 +61,7 @@ aisles %>%
 
 Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
 
-```{r todo1}
+```{r}
 new = 
 instacart %>%
   filter(aisle == "baking ingredients" | aisle == "dog food care" | aisle == "packaged vegetables fruits") %>%
@@ -70,14 +72,19 @@ instacart %>%
 new
 ```
 
-* Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
-```{r todo2}
+Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+```{r todo1}
 apples_icecream = instacart %>% 
   filter(product_name == "Pink Lady Apples" | product_name == "Coffee Ice Cream") %>%
-  group_by(order_dow) %>%
-  summarize(mean_hour = mean(order_hour_of_day))
+  group_by(product_name, order_dow) %>%
+  summarize(mean_hour = mean(order_hour_of_day)) %>%
+  rename(Day=order_dow) %>%
+  pivot_wider(
+    names_from = "Day", 
+    values_from = "mean_hour"
+  )
+apples_icecream
 ```
-Printing: `r print(as_tibble(apples_icecream))`
 
 # Problem 2
 ```{r q2}
@@ -92,13 +99,40 @@ accel = read_csv(file = "./local_data_q1_q2/accel_data.csv") %>%
 
 The accel dataset contains five weeks of accelerometer data collected on a 63 year-old male with BMI 25, who was admitted to the Advanced Cardiac Care Center of Columbia University Medical Center and diagnosed with congestive heart failure (CHF). It has `r nrow(accel)` rows and `r ncol(accel)` columns, and the variables included: `r names(accel)`
 
-```{r q2.1}
-accel %>% group_by(day_id) %>%
-    summarize(total_day_activity = sum(activity))
+Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate across minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
 
+```{r q2.1}
+summ_table = accel %>% 
+  group_by(day_id) %>%
+  summarize(total_day_activity = sum(activity))
+
+accel = accel %>% 
+  group_by(day_id) %>%
+  mutate(
+    total_day_activity = sum(activity)
+    )
+
+summ_table
 ```
 
-Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate across minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent?
+The last two Sunday's of the measurement period, the participant had significantly lower activity throughout the day, compared to the other days. 
+
+Accelerometer data allows the inspection activity over the course of the day. Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph. 
+
+```{r}
+ggplot(accel, aes(x = activity_minute, y = activity, color = day))  + 
+  geom_line(alpha = .5) +
+  labs(
+    title = "Activity by Day",
+    x = "Activity over 24 hours",
+    y = "Accelerometer activity level",
+    caption = "Data from the accel dataset"
+  ) +
+  theme(axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+
+Across the five weeks, it appears that Wednesdays (yellow) are the participant's least active days, and the participant is the most active in the early morning, and least active just before noon. 
 
 # Problem 3
 ```{r q3}
@@ -108,21 +142,77 @@ missing = sum(is.na(ny_noaa))
 total_cells = ncol(ny_noaa) * nrow(ny_noaa)
 pct_missing = (missing / total_cells) * 100
 ```
+
 The NOAA dataset contains data from NOAA National Climatic Data Center. For each Weather station ID, the dataset describes the Date of observation, Precipitation (tenths of mm), Snowfall (mm), Snow depth (mm), Maximum temperature (tenths of degrees C), and the Minimum temperature (tenths of degrees C). It has `r nrow(ny_noaa)` rows and `r ncol(ny_noaa)` columns. `r pct_missing`% of the data is missing. 
 
 Do some data cleaning. Create separate variables for year, month, and day. Ensure observations for temperature, precipitation, and snowfall are given in reasonable units. For snowfall, what are the most commonly observed values? Why?
 
 ```{r}
-ny_noaa %>%
+ny_noaa = ny_noaa %>%
   janitor::clean_names() %>%
   separate(col = date, into = c('year', 'month', 'day'), sep = '-')
+skimr::skim(ny_noaa)
+snowfall = ny_noaa %>%
+  group_by(snow) %>%
+  summarize(n_obs = n()) %>%
+  arrange(desc(n_obs))
 ```
+
+The most commonly observed values are `r snowfall$snow[1]` mm, `r snowfall$snow[2]`, and `r snowfall$snow[3]` mm (respectively). Since the most reported variable is `r snowfall$snow[1]` mm,we can assume that among stations that collect snowfall data, the mojority of data collections indicate no snowfall.
 
 Make a two-panel plot showing the average max temperature in January and in July in each station across years. Is there any observable / interpretable structure? Any outliers?
 
+```{r}
+JanJuly = ny_noaa %>%
+  filter((month == "01" | month == "07") & tmax != "") %>%
+  mutate(month = ifelse(month == "01", "January", "July")) %>%
+  group_by(id, year, month) %>%
+  summarize(
+    tmax = mean(as.integer(tmax))
+  )
 
+ggplot(JanJuly, aes(x = year, y = tmax, color = month)) + 
+  geom_point(alpha = .5) + 
+  facet_grid(. ~ month) +
+  labs(
+    title = "Average Max Temperature (C) by month for each station",
+    x = "Year",
+    y = "Avergae Max Temp (C)",
+    caption = "Data from the ny_noaa dataset"
+  )  +
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+```
 
-Make a two-panel plot showing (i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option); and (ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+The stations record a range of values for the maximum temperature each year, and there are several outliers. There seems to be a larger spread of recorded temperatures in January, comapred to July.
 
+Make a two-panel plot showing:
+
+(i) tmax vs tmin for the full dataset (note that a scatterplot may not be the best option)
+
+(ii) make a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year.
+
+```{r}
+tmax_tmin = ny_noaa %>%
+  ggplot(aes(x = as.integer(tmax), y = as.integer(tmin))) + 
+  geom_hex(alpha = .5) +
+  labs(
+    x = "Max Tempterature (C)",
+    y = "Min Tempterature (C)",
+    caption = "Data from the ny_noaa dataset"
+  )
+
+snowfallGraph = ny_noaa %>%
+  filter(snow > 0 & snow < 100) %>%
+  ggplot(aes(x = tmax, y = year)) + 
+  geom_density_ridges(scale = .85)
+  labs(
+    title = "Snowfall by year",
+    x = "Snowfall (mm)",
+    y = "Count",
+    caption = "Data from the ny_noaa dataset"
+  ) + theme(axis.text.x = element_text(angle=90, hjust=1))
+
+tmax_tmin / snowfallGraph
+```
 
 
